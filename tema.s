@@ -25,6 +25,7 @@ aux: .long 0
 writeG: .asciz "(%d, "
 get_i: .long 0
 zerozero: .asciz "(0, 0)\n"
+lastNonZero: .long 0
 .text
 
 add:
@@ -284,11 +285,6 @@ call scanf
 popl %ebx
 popl %ebx
 
-pushl descriptor
-pushl $formatWrite
-call printf
-popl %ebx
-popl %ebx
 
 movl $0, i
 movl $0, j
@@ -384,6 +380,105 @@ closeDelete:
 popl %ebp
 ret
 
+
+defrag:
+
+pushl %ebp
+mov %esp, %ebp
+
+movl $0, i
+movl $0, j
+movl $0, lastNonZero
+
+startDefrag:
+
+movl i, %ecx         ;#for( int i =0; i<1024; i++)
+movl $1024, %edx
+cmp %ecx, %edx
+je writeDefrag
+
+addl $1, i
+
+movl (%edi, %ecx, 4), %eax
+cmp $0, %eax                   ;#if( v[i] != 0 )
+je noSwap
+
+
+movl lastNonZero, %ebx             ;#swap( v[lastNonzero], v[i])
+movl (%edi, %ebx, 4), %edx
+movl %edx, (%edi, %ecx, 4)
+movl %eax, (%edi, %ebx, 4)
+addl $1, lastNonZero               ;#swap( v[lastNonZero], v[i])
+
+
+jmp startDefrag
+
+
+noSwap:
+
+jmp startDefrag
+
+
+writeDefrag:
+
+movl j, %ecx     ;#for( int j=0; j<1024; j++)
+movl $1024, %edx
+cmp %ecx, %edx
+je closeDefrag
+
+movl (%edi, %ecx, 4), %eax
+
+cmp $0, %eax    ;#if(v[i]!=0)
+je skipZeroDelete
+
+pushl %eax
+pushl $write1
+call printf
+popl %ebx
+popl %ebx
+
+pushl j
+pushl $write2
+call printf
+popl %ebx
+popl %ebx
+
+jmp verifDefrag
+
+skipZeroDefrag:
+addl $1, j
+jmp writeDefrag
+
+verifDefrag:
+movl j, %ecx
+movl (%edi, %ecx, 4), %eax
+movl 4(%edi, %ecx, 4), %edx
+cmp %eax, %edx    ;# iesire din while daca v[j]!=v[j+1]
+jne coutDefrag
+
+addl $1, j
+cmp $1024, %ecx
+je coutDefrag
+
+
+jmp verifDefrag
+
+coutDefrag:
+
+pushl %ecx    ;#cout<< j)
+pushl $write3
+call printf
+popl %ebx
+popl %ebx
+addl $1, j
+jmp writeDefrag
+
+
+closeDefrag:
+
+popl %ebp
+ret
+
 .global main
 
 main:
@@ -410,10 +505,6 @@ popl %ebx
 
 movl cod, %eax
 
-pushl $chkWrite
-call printf
-popl %ebx
-
 subl $1, nrOperatii
 movl cod, %eax
 
@@ -426,29 +517,29 @@ je callGet
 cmp $3, %eax
 je callDelete
 
+cmp $4, %eax
+je callDefrag
+
 jmp whileNrOp
 
 callAdd:
-
-pushl $chkWrite
-call printf
-popl %ebx
 
 call add
 jmp whileNrOp
 
 callGet:
-pushl $chkWrite
-call printf
-popl %ebx
+
 call get
 jmp whileNrOp
 
 callDelete:
-pushl $chkWrite
-call printf
-popl %ebx
+
 call delete
+jmp whileNrOp
+
+callDefrag:
+
+call defrag
 jmp whileNrOp
 
 close:
