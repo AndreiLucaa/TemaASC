@@ -17,7 +17,8 @@ chkWrite: .asciz "Aici a ajuns\n"
 cat: .space 4
 rest: .space 4
 interval_i: .long 0
-write1: .asciz "%d :("
+writeCanNotAdd: .asciz "%d: "
+write1: .asciz "%d: ("
 write2: .asciz "%d, "
 write3: .asciz "%d)\n"
 canAdd: .long 0
@@ -26,6 +27,7 @@ writeG: .asciz "(%d, "
 get_i: .long 0
 zerozero: .asciz "(0, 0)\n"
 lastNonZero: .long 0
+added: .long 0
 .text
 
 add:
@@ -80,6 +82,8 @@ movl $8, %ecx
 divl %ecx
 movl %eax, nrBlocuri
 
+movl $0, added
+
 cmp $0, %edx
 je for1
 addl $1, nrBlocuri
@@ -92,13 +96,14 @@ for1:
 
 movl i, %ecx
 movl $1024, %edx
-
+subl nrBlocuri, %edx
+addl $1, %edx
 ;#bool canAdd = true
 
 movl $1, canAdd
 movl $0, aux
 cmp %ecx, %edx
-je whileNrFisiere
+je canNotAdd
 
 movl i, %ecx  ;#j=i
 movl %ecx, j
@@ -115,6 +120,7 @@ forj:
 movl j, %ecx
 movl i, %edx
 addl nrBlocuri, %edx
+
 cmp %ecx, %edx
 je verifCanAdd
 
@@ -145,6 +151,10 @@ call printf
 popl %ebx
 popl %ebx
 
+pushl $0
+call fflush
+popl %ebx
+
 addDesc:
 
 movl j, %ecx
@@ -170,6 +180,10 @@ call printf
 popl %ebx
 popl %ebx
 
+pushl $0
+call fflush
+popl %ebx
+
 movl j, %ecx
 subl $1, %ecx
 pushl %ecx
@@ -178,15 +192,45 @@ call printf
 popl %ebx
 popl %ebx
 
+pushl $0
+call fflush
+popl %ebx
+
 movl $0, i
 
-jmp whileNrFisiere
+movl $1, added
 
+jmp canNotAdd
 
 canAddFalse:
 
 addl $1, i
-jmp for1
+jmp canNotAdd
+
+canNotAdd:
+movl added, %eax
+cmp $0, %eax
+jne whileNrFisiere
+
+pushl descriptor
+pushl $writeCanNotAdd
+call printf
+popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
+pushl $zerozero
+call printf
+popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
+jmp whileNrFisiere
 
 closeAdd:
 
@@ -231,11 +275,21 @@ movl get_i, %ecx
 cmp $0, %ecx
 je coutGetZeroCase
 addl $1, get_i
+
+movl get_i, %ecx
+
+cmp $1024, %ecx
+je descNotFound
+
 movl get_i, %ecx  ;# cout<< (get_i ;
 pushl %ecx
 pushl $writeG
 call printf
 popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
 popl %ebx
 
 jmp verifGet
@@ -248,6 +302,10 @@ pushl %ecx
 pushl $writeG
 call printf
 popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
 popl %ebx
 
 verifGet:
@@ -269,6 +327,22 @@ pushl %ecx
 pushl $write3
 call printf
 popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
+jmp closeGet
+
+descNotFound:
+
+pushl $zerozero
+call printf
+popl %ebx
+
+pushl $0
+call fflush
 popl %ebx
 
 closeGet:
@@ -319,6 +393,10 @@ call printf
 popl %ebx
 popl %ebx
 
+pushl $0
+call fflush
+popl %ebx
+
 addl $1, j
 jmp coutArray
 
@@ -340,10 +418,18 @@ call printf
 popl %ebx
 popl %ebx
 
+pushl $0
+call fflush
+popl %ebx
+
 pushl j
 pushl $write2
 call printf
 popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
 popl %ebx
 
 jmp verifDelete
@@ -373,6 +459,11 @@ pushl $write3
 call printf
 popl %ebx
 popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
 addl $1, j
 jmp forDelete2
 
@@ -437,10 +528,18 @@ call printf
 popl %ebx
 popl %ebx
 
+pushl $0
+call fflush
+popl %ebx
+
 pushl j
 pushl $write2
 call printf
 popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
 popl %ebx
 
 jmp verifDefrag
@@ -470,6 +569,11 @@ pushl $write3
 call printf
 popl %ebx
 popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
 addl $1, j
 jmp writeDefrag
 
