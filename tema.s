@@ -30,6 +30,86 @@ lastNonZero: .long 0
 added: .long 0
 .text
 
+printMem:
+
+pushl %ebp
+mov %esp, %ebp
+
+
+movl $0, j
+
+forPrint:
+
+movl j, %ecx     ;#for( int j=0; j<1024; j++)
+movl $1024, %edx
+cmp %ecx, %edx
+je closePrint
+
+lea v, %edi
+
+movl (%edi, %ecx, 4), %eax
+
+cmp $0, %eax    ;#if(v[i]!=0)
+je skipZeroPrint
+
+pushl %eax
+pushl $write1
+call printf
+popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
+pushl j
+pushl $write2
+call printf
+popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
+jmp verifPrint
+
+skipZeroPrint:
+addl $1, j
+jmp forPrint
+
+verifPrint:
+movl j, %ecx
+movl (%edi, %ecx, 4), %eax
+movl 4(%edi, %ecx, 4), %edx
+cmp %eax, %edx    ;# iesire din while daca v[j]!=v[j+1]
+jne coutPrint4
+
+addl $1, j
+cmp $1024, %ecx
+je coutPrint4
+
+jmp verifPrint
+
+coutPrint4:
+
+pushl %ecx    ;#cout<< j)
+pushl $write3
+call printf
+popl %ebx
+popl %ebx
+
+pushl $0
+call fflush
+popl %ebx
+
+addl $1, j
+jmp forPrint
+
+closePrint:
+popl %ebp
+ret
+
 add:
 
 pushl %ebp
@@ -84,6 +164,7 @@ movl %eax, nrBlocuri
 
 movl $0, added
 
+
 cmp $0, %edx
 je for1
 addl $1, nrBlocuri
@@ -91,6 +172,9 @@ addl $1, nrBlocuri
 movl $0, i
 
 for1:
+movl nrBlocuri, %eax
+cmp $2, %eax
+jl canNotAdd
 
 ;#for(i=0; i<1024; i++)
 
@@ -103,7 +187,7 @@ addl $1, %edx
 movl $1, canAdd
 movl $0, aux
 cmp %ecx, %edx
-je canNotAdd
+jle canNotAdd
 
 movl i, %ecx  ;#j=i
 movl %ecx, j
@@ -205,7 +289,7 @@ jmp canNotAdd
 canAddFalse:
 
 addl $1, i
-jmp canNotAdd
+jmp for1
 
 canNotAdd:
 movl added, %eax
@@ -402,70 +486,7 @@ jmp coutArray
 
 forDelete2:
 
-movl j, %ecx     ;#for( int j=0; j<1024; j++)
-movl $1024, %edx
-cmp %ecx, %edx
-je closeDelete
-
-movl (%edi, %ecx, 4), %eax
-
-cmp $0, %eax    ;#if(v[i]!=0)
-je skipZeroDelete
-
-pushl %eax
-pushl $write1
-call printf
-popl %ebx
-popl %ebx
-
-pushl $0
-call fflush
-popl %ebx
-
-pushl j
-pushl $write2
-call printf
-popl %ebx
-popl %ebx
-
-pushl $0
-call fflush
-popl %ebx
-
-jmp verifDelete
-
-skipZeroDelete:
-addl $1, j
-jmp forDelete2
-
-verifDelete:
-movl j, %ecx
-movl (%edi, %ecx, 4), %eax
-movl 4(%edi, %ecx, 4), %edx
-cmp %eax, %edx    ;# iesire din while daca v[j]!=v[j+1]
-jne coutDelete4
-
-addl $1, j
-cmp $1024, %ecx
-je coutDelete4
-
-
-jmp verifDelete
-
-coutDelete4:
-
-pushl %ecx    ;#cout<< j)
-pushl $write3
-call printf
-popl %ebx
-popl %ebx
-
-pushl $0
-call fflush
-popl %ebx
-
-addl $1, j
-jmp forDelete2
+call printMem
 
 closeDelete:
 popl %ebp
@@ -512,71 +533,7 @@ jmp startDefrag
 
 writeDefrag:
 
-movl j, %ecx     ;#for( int j=0; j<1024; j++)
-movl $1024, %edx
-cmp %ecx, %edx
-je closeDefrag
-
-movl (%edi, %ecx, 4), %eax
-
-cmp $0, %eax    ;#if(v[i]!=0)
-je skipZeroDelete
-
-pushl %eax
-pushl $write1
-call printf
-popl %ebx
-popl %ebx
-
-pushl $0
-call fflush
-popl %ebx
-
-pushl j
-pushl $write2
-call printf
-popl %ebx
-popl %ebx
-
-pushl $0
-call fflush
-popl %ebx
-
-jmp verifDefrag
-
-skipZeroDefrag:
-addl $1, j
-jmp writeDefrag
-
-verifDefrag:
-movl j, %ecx
-movl (%edi, %ecx, 4), %eax
-movl 4(%edi, %ecx, 4), %edx
-cmp %eax, %edx    ;# iesire din while daca v[j]!=v[j+1]
-jne coutDefrag
-
-addl $1, j
-cmp $1024, %ecx
-je coutDefrag
-
-
-jmp verifDefrag
-
-coutDefrag:
-
-pushl %ecx    ;#cout<< j)
-pushl $write3
-call printf
-popl %ebx
-popl %ebx
-
-pushl $0
-call fflush
-popl %ebx
-
-addl $1, j
-jmp writeDefrag
-
+call printMem
 
 closeDefrag:
 
@@ -629,7 +586,10 @@ jmp whileNrOp
 callAdd:
 
 call add
+
 jmp whileNrOp
+
+
 
 callGet:
 
@@ -648,6 +608,10 @@ jmp whileNrOp
 
 close:
 
+pushl $0
+call fflush
+popl %eax
+
 mov $1, %eax
-xor %ebx, %ebx
+xorl %ebx, %ebx
 int $0x80
