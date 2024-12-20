@@ -96,11 +96,6 @@ movl $0, j
 movl $0, k
 movl $0, l
 
-pushl nrBlocuri
-pushl $formatWrite
-call printf
-popl %ebx
-popl %ebx
 
 cmp $0, %edx
 je fori
