@@ -1,7 +1,9 @@
 .data
+found: .long 0
 l: .long 0
 indexMatrice: .long 0
 v: .space 16777216
+nMax: .long 16777216
 i: .long 0
 j: .long 0
 k: .long 0
@@ -29,7 +31,7 @@ write5: .asciz "%d))\n"
 coutZero: .asciz "%d: ((0, 0), (0, 0))\n"
 canAdd: .long 0
 aux: .long 0
-writeG: .asciz "(%d, "
+writeG: .asciz "((%d, "
 get_i: .long 0
 zerozero: .asciz "(0, 0)\n"
 lastNonZero: .long 0
@@ -37,6 +39,35 @@ added: .long 0
 
 
 .text
+
+writeArray:
+pushl %ebp
+mov %esp, %ebp
+
+movl $0, i
+
+writeArr:
+movl i, %ecx
+movl $2048, %edx
+cmp %ecx, %edx
+jle closeWriteArr
+movl $0, %eax
+movl (%edi, %ecx, 4), %eax
+
+pushl %eax
+pushl $formatWriteArr
+call printf
+popl %ebx
+popl %ebx
+
+
+addl $1, i
+jmp writeArr
+
+closeWriteArr:
+
+popl %ebp
+ret
 
 add:
 
@@ -127,6 +158,7 @@ movl $0, %eax
 addl $1024, %eax
 mull %ebx
 addl %ecx, %eax
+
 
 movl (%edi, %eax, 4), %eax
 
@@ -224,6 +256,7 @@ popl %ebx
 
 movl j, %ecx
 addl nrBlocuri, %ecx
+subl $1, %ecx
 movl %ecx, j
 
 pushl j
@@ -250,12 +283,137 @@ movl $0, j
 movl $0, k
 movl $0, l
 addl $1, i
+
 jmp fori
 
 closeAdd:
 
 popl %ebp
 ret
+
+get:
+
+pushl %ebp
+mov %esp, %ebp
+
+lea v, %edi
+
+pushl $descriptor
+pushl $formatRead
+call scanf
+popl %ebx
+popl %ebx
+
+movl $0, i
+movl $0, j
+movl $0, found
+forGetI:
+
+lea v, %edi
+
+movl i, %ebx
+movl $1024, %edx
+
+cmp %ebx, %edx
+jle coutZeroGet
+
+forGetJ:
+
+movl j, %ecx
+movl $1024, %edx
+cmp %ecx, %edx
+jle inclGet
+
+movl $0, %eax
+movl $1024, %eax
+mull %ebx
+addl %ecx, %eax
+
+movl descriptor, %ecx
+cmp %ecx, (%edi, %eax, 4)
+je coutGet
+
+addl $1, j
+jmp forGetJ
+
+coutGet:
+
+pushl i
+pushl $writeG
+call printf
+popl %ebx
+popl %ebx
+
+pushl j
+pushl $write3
+call printf
+popl %ebx
+popl %ebx
+
+addl $1, j
+
+compDesc:
+xorl %eax, %eax
+movl i, %ebx
+movl $0, %eax
+movl $1024, %eax
+mull %ebx
+addl j, %eax
+
+movl descriptor, %ecx
+cmp %ecx, (%edi, %eax, 4)
+jne coutGet2
+
+addl $1, j
+
+jmp compDesc
+
+coutGet2:
+
+pushl i
+pushl $write4
+call printf
+popl %ebx
+popl %ebx
+
+subl $1, j
+
+pushl j
+pushl $write5
+call printf
+popl %ebx
+popl %ebx
+
+jmp closeGet
+
+coutZeroGet:
+
+pushl descriptor
+pushl $coutZero
+call printf
+popl %ebx
+popl %ebx
+
+jmp closeGet
+
+inclGet:
+
+
+addl $1, i
+movl $0, j
+movl $0, %eax
+movl $0, %ebx
+movl $0, %ecx
+movl $0, %edx
+jmp forGetI
+
+closeGet:
+
+popl %ebp
+
+ret
+
+
 
 .global main
 
@@ -289,11 +447,20 @@ movl cod, %eax
 cmp $1, %eax
 je callAdd
 
+cmp $2, %eax
+je callGet
+
 jmp whileNrOp
 
 callAdd:
 
 call add
+
+jmp whileNrOp
+
+callGet:
+
+call get
 
 jmp whileNrOp
 
