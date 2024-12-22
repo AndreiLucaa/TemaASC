@@ -2,8 +2,8 @@
 found: .long 0
 l: .long 0
 indexMatrice: .long 0
-v: .space 16777216
-nMax: .long 16777216
+v: .space 4194304
+nrMax: .long 1048576
 i: .long 0
 j: .long 0
 k: .long 0
@@ -29,6 +29,7 @@ write3: .asciz "%d), "
 write4: .asciz "(%d, "
 write5: .asciz "%d))\n"
 coutZero: .asciz "%d: ((0, 0), (0, 0))\n"
+coutZeroget: .asciz "((0, 0), (0, 0))\n"
 canAdd: .long 0
 aux: .long 0
 writeG: .asciz "((%d, "
@@ -36,19 +37,128 @@ get_i: .long 0
 zerozero: .asciz "(0, 0)\n"
 lastNonZero: .long 0
 added: .long 0
-
+printEndl: .asciz "%d\n"
 
 .text
+
+printMemory:
+
+pushl %ebp
+mov %esp, %ebp
+
+lea v, %edi
+
+movl $0, i
+movl $0, j
+
+for1:
+
+;# for( int i = 0; i< 1024; i++)
+
+movl i, %ebx
+movl nrMax, %edx
+cmp %ebx, %edx
+je closePrintMem
+
+
+movl (%edi, %ebx, 4), %eax
+cmp $0, %eax
+je skipZero
+
+pushl %eax
+pushl $write1
+call printf
+popl %ebx
+popl %ebx
+
+movl $1024, %ecx
+movl $0, %edx
+movl i, %eax
+divl %ecx
+
+movl %eax, cat
+movl %edx, rest
+
+pushl cat
+pushl $write2
+call printf
+popl %ebx
+popl %ebx
+
+pushl rest
+pushl $write3
+call printf
+popl %ebx
+popl %ebx
+
+jmp verifPrint
+
+verifPrint:
+
+movl $0, %eax
+movl $0, %ecx
+movl $0, %edx
+movl i, %ebx
+
+movl (%edi, %ebx, 4), %eax
+movl 4(%edi, %ebx, 4), %ecx
+
+cmp %eax, %ecx
+jne coutRest
+
+addl $1, i
+
+jmp verifPrint
+
+
+coutRest:
+
+movl $1024, %ecx
+movl $0, %edx
+movl i, %eax
+divl %ecx
+
+movl %eax, cat
+movl %edx, rest
+
+pushl cat
+pushl $write4
+call printf
+popl %ebx
+popl %ebx
+
+pushl rest
+pushl $write5
+call printf
+popl %ebx
+popl %ebx
+
+
+addl $1, i
+jmp for1
+
+skipZero:
+
+addl $1, i
+jmp for1
+
+closePrintMem:
+
+popl %ebp
+ret
 
 writeArray:
 pushl %ebp
 mov %esp, %ebp
 
+
+
 movl $0, i
+movl $0, j
 
 writeArr:
 movl i, %ecx
-movl $2048, %edx
+movl $1024, %edx
 cmp %ecx, %edx
 jle closeWriteArr
 movl $0, %eax
@@ -146,7 +256,7 @@ je coutZeroZero
 jmp forj
 
 forj:
-
+movl $0, k
 movl j, %ecx          ;#for(j = 0; j<1024 -nrBlocuri +1; j++)
 movl $1024, %edx
 subl nrBlocuri, %edx
@@ -163,45 +273,48 @@ addl %ecx, %eax
 movl (%edi, %eax, 4), %eax
 
 cmp $0, %eax                 ;#if (v[i][j] == 0)
-je gasitZero
+je gasitZero1
 
-addl $1, j
+addl $1, j                   ;#j++
 movl i, %ebx
 jmp forj
 
-gasitZero:
+gasitZero1:
 
-movl $1, canAdd          ;#canAdd = 1
+movl $1, canAdd         ;#canAdd = 1
+
+gasitZero2:
+
 movl k, %ecx 		;#for(k = 0; k< nrBlocuri; k++)
 movl nrBlocuri, %edx
 cmp %ecx, %edx
-jle verifCanAdd
+je verifCanAdd
 
 movl $0, %eax
 movl $1024, %eax
 mull %ebx
-addl %ecx, %eax
+addl k, %eax
 addl j, %eax
 
 addl $1, k
 
 movl (%edi, %eax, 4), %eax
 
-cmp $0, %eax
-je gasitZero
+cmp $0, %eax              ;#if( v[i][j+k] != 0)
+je gasitZero2
 
-movl $0, canAdd
-jmp verifCanAdd
+movl $0, canAdd           ;#canAdd = 0
+jmp verifCanAdd 	  ;#break
 
 verifCanAdd:
 movl canAdd, %ecx
-cmp $0, %ecx
-je forj
+cmp $0, %ecx		;#if(canAdd)
+je canAddFalse
 
-movl l, %ecx
+movl l, %ecx		;#for( int l = 0; l< nrBlocuri; l++)
 movl nrBlocuri, %edx
 cmp %ecx, %edx
-jle added1
+je added1
 
 movl $0, %eax
 movl $1024, %eax
@@ -211,9 +324,9 @@ addl j, %eax
 
 movl descriptor, %ecx
 
-movl %ecx, (%edi, %eax, 4)
+movl %ecx, (%edi, %eax, 4)	;#v[i][j+l] = descriptor
 
-addl $1, l
+addl $1, l			;#l++
 jmp verifCanAdd
 
 added1:
@@ -285,6 +398,11 @@ movl $0, l
 addl $1, i
 
 jmp fori
+
+canAddFalse:
+
+addl $1, j
+jmp forj
 
 closeAdd:
 
@@ -388,11 +506,10 @@ jmp closeGet
 
 coutZeroGet:
 
-pushl descriptor
-pushl $coutZero
+pushl $coutZeroget
 call printf
 popl %ebx
-popl %ebx
+
 
 jmp closeGet
 
@@ -412,6 +529,85 @@ closeGet:
 popl %ebp
 
 ret
+
+delete:
+
+pushl %ebp
+mov %esp, %ebp
+
+pushl $descriptor
+pushl $formatRead
+call scanf
+popl %ebx
+popl %ebx
+
+movl $0, i
+movl $0, j
+
+forDeleteI:
+
+lea v, %edi
+
+movl i, %ebx
+movl $1024, %edx
+
+cmp %ebx, %edx
+jle closeDelete
+
+forDeleteJ:
+
+movl j, %ecx
+movl $1024, %edx
+cmp %ecx, %edx
+jle inclDelete
+
+movl $0, %eax
+movl $1024, %eax
+mull %ebx
+addl %ecx, %eax
+
+movl descriptor, %ecx
+cmp %ecx, (%edi, %eax, 4)
+je addZero
+
+addl $1, j
+
+jmp forDeleteJ
+
+addZero:
+
+xorl %eax, %eax
+movl i, %ebx
+movl $0, %eax
+movl $1024, %eax
+mull %ebx
+addl j, %eax
+
+movl descriptor, %ecx
+
+cmp %ecx, (%edi, %eax, 4)
+jne closeDelete
+
+movl $0, (%edi, %eax, 4)
+
+addl $1, j
+
+jmp addZero
+
+inclDelete:
+
+addl $1, i
+movl $0, j
+
+jmp forDeleteI
+
+closeDelete:
+
+popl %ebp
+
+ret
+
+
 
 
 
@@ -450,6 +646,9 @@ je callAdd
 cmp $2, %eax
 je callGet
 
+cmp $3, %eax
+je callDelete
+
 jmp whileNrOp
 
 callAdd:
@@ -462,6 +661,12 @@ callGet:
 
 call get
 
+jmp whileNrOp
+
+callDelete:
+
+call delete
+call printMemory
 jmp whileNrOp
 
 close:
